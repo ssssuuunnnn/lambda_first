@@ -1,0 +1,53 @@
+name: Deploy to Lambda
+
+on:
+  push:
+    branches:
+      - main  # 當 push 到 main branch 時自動觸發
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          pip install \
+            "fastapi>=0.115.0" \
+            "mangum>=0.17.0" \
+            "pydantic>=2.7.0" \
+            "pydantic-core>=2.18.0" \
+            --platform manylinux2014_aarch64 \
+            --target ./package \
+            --implementation cp \
+            --python-version 3.14 \
+            --only-binary=:all:
+
+      - name: Package Lambda
+        run: |
+          cp lambda_function.py package/
+          cd package
+          zip -r ../function.zip .
+
+      - name: Deploy to Lambda
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name my-first-function \
+            --zip-file fileb://function.zip \
+            --region ap-southeast-2
+
