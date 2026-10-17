@@ -18,4 +18,4 @@ def read_root():
 
 
 # Mangum 作為 FastAPI 與 AWS Lambda 事件之間的轉接橋樑
-handler = Mangum(app)
+lambda_handler = Mangum(app)
